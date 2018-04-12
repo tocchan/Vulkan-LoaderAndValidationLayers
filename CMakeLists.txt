@@ -2,7 +2,7 @@
 # refer to the root source directory of the project as ${VULKAN_SOURCE_DIR} and
 # to the root binary directory of the project as ${VULKAN_BINARY_DIR}.
 cmake_minimum_required(VERSION 2.8.11)
-project (VULKAN)
+project (VULKAN-LAYERS)
 # set (CMAKE_VERBOSE_MAKEFILE 1)
 
 # The API_NAME allows renaming builds to avoid conflicts with installed SDKs
@@ -13,6 +13,13 @@ set(MAJOR "1")
 string(TOLOWER ${API_NAME} API_LOWERCASE)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+
+# if CMAKE 3.7+, use FindVulkan
+if (NOT CMAKE_VERSION VERSION_LESS 3.7.0)
+    message(STATUS "Using find_package to locate Vulkan")
+    find_package(Vulkan)
+endif()
 find_package(PythonInterp 3 REQUIRED)
 
 option(USE_CCACHE "Use ccache" OFF)
@@ -146,16 +153,9 @@ else()
     endif()
 endif()
 
-option(BUILD_LOADER "Build loader" ON)
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_LAYERS "Build layers" ON)
-option(BUILD_DEMOS "Build demos" ON)
-if (APPLE)
-    option(BUILD_VKJSON "Build vkjson" OFF)
-else()
-    option(BUILD_VKJSON "Build vkjson" ON)
-endif()
-option(BUILD_ICD "Build icd" ON)
+
 option(CUSTOM_GLSLANG_BIN_ROOT "Use the user defined GLSLANG_BINARY_ROOT" OFF)
 option(CUSTOM_SPIRV_TOOLS_BIN_ROOT "Use the user defined SPIRV_TOOLS*BINARY_ROOT paths" OFF)
 
@@ -439,28 +439,10 @@ target_include_directories(
 
 add_definitions(-DAPI_NAME="${API_NAME}")
 
-# loader: Generic VULKAN ICD loader
-# tests: VULKAN tests
-if(BUILD_LOADER)
-    add_subdirectory(loader)
-endif()
-
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
 if(BUILD_LAYERS)
     add_subdirectory(layers)
-endif()
-
-if(BUILD_DEMOS)
-    add_subdirectory(demos)
-endif()
-
-if(BUILD_VKJSON)
-    add_subdirectory(libs/vkjson)
-endif()
-
-if(BUILD_ICD)
-    add_subdirectory(icd)
 endif()
