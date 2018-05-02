@@ -1302,7 +1302,8 @@ static inline bool IsExtentAligned(const VkExtent3D *extent, const VkExtent3D *g
 
 // Check elements of a VkOffset3D structure against a queue family's Image Transfer Granularity values
 static inline bool CheckItgOffset(layer_data *device_data, const GLOBAL_CB_NODE *cb_node, const VkOffset3D *offset,
-                                  const VkExtent3D *granularity, const uint32_t i, const char *function, const char *member) {
+                                  const VkExtent3D *granularity, const uint32_t i, const char *function, const char *member,
+                                  UNIQUE_VALIDATION_ERROR_CODE vuid) {
     const debug_report_data *report_data = core_validation::GetReportData(device_data);
     bool skip = false;
     VkExtent3D offset_extent = {};
@@ -1313,7 +1314,7 @@ static inline bool CheckItgOffset(layer_data *device_data, const GLOBAL_CB_NODE 
         // If the queue family image transfer granularity is (0, 0, 0), then the offset must always be (0, 0, 0)
         if (IsExtentAllZeroes(&offset_extent) == false) {
             skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
-                            HandleToUint64(cb_node->commandBuffer), DRAWSTATE_IMAGE_TRANSFER_GRANULARITY,
+                            HandleToUint64(cb_node->commandBuffer), vuid,
                             "%s: pRegion[%d].%s (x=%d, y=%d, z=%d) must be (x=0, y=0, z=0) when the command buffer's queue family "
                             "image transfer granularity is (w=0, h=0, d=0).",
                             function, i, member, offset->x, offset->y, offset->z);
@@ -1323,7 +1324,7 @@ static inline bool CheckItgOffset(layer_data *device_data, const GLOBAL_CB_NODE 
         // integer multiples of the image transfer granularity.
         if (IsExtentAligned(&offset_extent, granularity) == false) {
             skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
-                            HandleToUint64(cb_node->commandBuffer), DRAWSTATE_IMAGE_TRANSFER_GRANULARITY,
+                            HandleToUint64(cb_node->commandBuffer), vuid,
                             "%s: pRegion[%d].%s (x=%d, y=%d, z=%d) dimensions must be even integer multiples of this command "
                             "buffer's queue family image transfer granularity (w=%d, h=%d, d=%d).",
                             function, i, member, offset->x, offset->y, offset->z, granularity->width, granularity->height,
@@ -1336,7 +1337,8 @@ static inline bool CheckItgOffset(layer_data *device_data, const GLOBAL_CB_NODE 
 // Check elements of a VkExtent3D structure against a queue family's Image Transfer Granularity values
 static inline bool CheckItgExtent(layer_data *device_data, const GLOBAL_CB_NODE *cb_node, const VkExtent3D *extent,
                                   const VkOffset3D *offset, const VkExtent3D *granularity, const VkExtent3D *subresource_extent,
-                                  const VkImageType image_type, const uint32_t i, const char *function, const char *member) {
+                                  const VkImageType image_type, const uint32_t i, const char *function, const char *member,
+                                  UNIQUE_VALIDATION_ERROR_CODE vuid) {
     const debug_report_data *report_data = core_validation::GetReportData(device_data);
     bool skip = false;
     if (IsExtentAllZeroes(granularity)) {
@@ -1344,7 +1346,7 @@ static inline bool CheckItgExtent(layer_data *device_data, const GLOBAL_CB_NODE 
         // subresource extent.
         if (IsExtentEqual(extent, subresource_extent) == false) {
             skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
-                            HandleToUint64(cb_node->commandBuffer), DRAWSTATE_IMAGE_TRANSFER_GRANULARITY,
+                            HandleToUint64(cb_node->commandBuffer), vuid,
                             "%s: pRegion[%d].%s (w=%d, h=%d, d=%d) must match the image subresource extents (w=%d, h=%d, d=%d) "
                             "when the command buffer's queue family image transfer granularity is (w=0, h=0, d=0).",
                             function, i, member, extent->width, extent->height, extent->depth, subresource_extent->width,
@@ -1380,7 +1382,7 @@ static inline bool CheckItgExtent(layer_data *device_data, const GLOBAL_CB_NODE 
         }
         if (!(x_ok && y_ok && z_ok)) {
             skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
-                            HandleToUint64(cb_node->commandBuffer), DRAWSTATE_IMAGE_TRANSFER_GRANULARITY,
+                            HandleToUint64(cb_node->commandBuffer), vuid,
                             "%s: pRegion[%d].%s (w=%d, h=%d, d=%d) dimensions must be even integer multiples of this command "
                             "buffer's queue family image transfer granularity (w=%d, h=%d, d=%d) or offset (x=%d, y=%d, z=%d) + "
                             "extent (w=%d, h=%d, d=%d) must match the image subresource extents (w=%d, h=%d, d=%d).",
@@ -1395,8 +1397,14 @@ static inline bool CheckItgExtent(layer_data *device_data, const GLOBAL_CB_NODE 
 // Check valid usage Image Transfer Granularity requirements for elements of a VkBufferImageCopy structure
 bool ValidateCopyBufferImageTransferGranularityRequirements(layer_data *device_data, const GLOBAL_CB_NODE *cb_node,
                                                             const IMAGE_STATE *img, const VkBufferImageCopy *region,
-                                                            const uint32_t i, const char *function) {
+                                                            const uint32_t i, const char *function,
+                                                            UNIQUE_VALIDATION_ERROR_CODE vuid) {
     bool skip = false;
+    VkExtent3D granularity = GetScaledItg(device_data, cb_node, img);
+    skip |= CheckItgOffset(device_data, cb_node, &region->imageOffset, &granularity, i, function, "imageOffset", vuid);
+    VkExtent3D subresource_extent = GetImageSubresourceExtent(img, &region->imageSubresource);
+    skip |= CheckItgExtent(device_data, cb_node, &region->imageExtent, &region->imageOffset, &granularity, &subresource_extent,
+                           img->createInfo.imageType, i, function, "imageExtent", vuid);
     if (FormatIsCompressed(img->createInfo.format) == true) {
         // TODO: Add granularity checking for compressed formats
 
@@ -1411,11 +1419,6 @@ bool ValidateCopyBufferImageTransferGranularityRequirements(layer_data *device_d
         // imageExtent.depth must be a multiple of the compressed texel block depth or (imageExtent.depth + imageOffset.z)
         //     must equal the image subresource depth
     } else {
-        VkExtent3D granularity = GetScaledItg(device_data, cb_node, img);
-        skip |= CheckItgOffset(device_data, cb_node, &region->imageOffset, &granularity, i, function, "imageOffset");
-        VkExtent3D subresource_extent = GetImageSubresourceExtent(img, &region->imageSubresource);
-        skip |= CheckItgExtent(device_data, cb_node, &region->imageExtent, &region->imageOffset, &granularity, &subresource_extent,
-                               img->createInfo.imageType, i, function, "imageExtent");
     }
     return skip;
 }
@@ -1427,21 +1430,23 @@ bool ValidateCopyImageTransferGranularityRequirements(layer_data *device_data, c
     bool skip = false;
     // Source image checks
     VkExtent3D granularity = GetScaledItg(device_data, cb_node, src_img);
-    skip |= CheckItgOffset(device_data, cb_node, &region->srcOffset, &granularity, i, function, "srcOffset");
+    skip |=
+        CheckItgOffset(device_data, cb_node, &region->srcOffset, &granularity, i, function, "srcOffset", VALIDATION_ERROR_19000dee);
     VkExtent3D subresource_extent = GetImageSubresourceExtent(src_img, &region->srcSubresource);
     const VkExtent3D extent = region->extent;
     skip |= CheckItgExtent(device_data, cb_node, &extent, &region->srcOffset, &granularity, &subresource_extent,
-                           src_img->createInfo.imageType, i, function, "extent");
+                           src_img->createInfo.imageType, i, function, "extent", VALIDATION_ERROR_19000dee);
 
     // Destination image checks
     granularity = GetScaledItg(device_data, cb_node, dst_img);
-    skip |= CheckItgOffset(device_data, cb_node, &region->dstOffset, &granularity, i, function, "dstOffset");
+    skip |=
+        CheckItgOffset(device_data, cb_node, &region->dstOffset, &granularity, i, function, "dstOffset", VALIDATION_ERROR_19000df0);
     // Adjust dest extent, if necessary
     const VkExtent3D dest_effective_extent =
         GetAdjustedDestImageExtent(src_img->createInfo.format, dst_img->createInfo.format, extent);
     subresource_extent = GetImageSubresourceExtent(dst_img, &region->dstSubresource);
     skip |= CheckItgExtent(device_data, cb_node, &dest_effective_extent, &region->dstOffset, &granularity, &subresource_extent,
-                           dst_img->createInfo.imageType, i, function, "extent");
+                           dst_img->createInfo.imageType, i, function, "extent", VALIDATION_ERROR_19000df0);
     return skip;
 }
 
@@ -4045,7 +4050,7 @@ bool PreCallValidateCmdCopyImageToBuffer(layer_data *device_data, VkImageLayout 
                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, "vkCmdCopyImageToBuffer()", VALIDATION_ERROR_1920017c,
                                   &hit_error);
         skip |= ValidateCopyBufferImageTransferGranularityRequirements(device_data, cb_node, src_image_state, &pRegions[i], i,
-                                                                       "vkCmdCopyImageToBuffer()");
+                                                                       "vkCmdCopyImageToBuffer()", VALIDATION_ERROR_19200e04);
     }
     return skip;
 }
@@ -4109,7 +4114,7 @@ bool PreCallValidateCmdCopyBufferToImage(layer_data *device_data, VkImageLayout 
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, "vkCmdCopyBufferToImage()", VALIDATION_ERROR_18e0016a,
                                   &hit_error);
         skip |= ValidateCopyBufferImageTransferGranularityRequirements(device_data, cb_node, dst_image_state, &pRegions[i], i,
-                                                                       "vkCmdCopyBufferToImage()");
+                                                                       "vkCmdCopyBufferToImage()", VALIDATION_ERROR_18e00e02);
     }
     return skip;
 }
