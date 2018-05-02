@@ -880,8 +880,11 @@ VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectTagEXT(VkDevice device, const
             local_tag_info.object = it->second;
         }
     }
-    VkResult result = device_data->dispatch_table.DebugMarkerSetObjectTagEXT(
-        device, reinterpret_cast<VkDebugMarkerObjectTagInfoEXT *>(&local_tag_info));
+    VkResult result = VK_SUCCESS;
+    if (device_data->dispatch_table.DebugMarkerSetObjectTagEXT) {
+        device_data->dispatch_table.DebugMarkerSetObjectTagEXT(device,
+                                                               reinterpret_cast<VkDebugMarkerObjectTagInfoEXT *>(&local_tag_info));
+    }
     return result;
 }
 
@@ -895,8 +898,11 @@ VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectNameEXT(VkDevice device, cons
             local_name_info.object = it->second;
         }
     }
-    VkResult result = device_data->dispatch_table.DebugMarkerSetObjectNameEXT(
-        device, reinterpret_cast<VkDebugMarkerObjectNameInfoEXT *>(&local_name_info));
+    VkResult result = VK_SUCCESS;
+    if (device_data->dispatch_table.DebugMarkerSetObjectNameEXT) {
+        result = device_data->dispatch_table.DebugMarkerSetObjectNameEXT(
+            device, reinterpret_cast<VkDebugMarkerObjectNameInfoEXT *>(&local_name_info));
+    }
     return result;
 }
 
