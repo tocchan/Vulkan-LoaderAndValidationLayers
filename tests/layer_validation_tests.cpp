@@ -19119,29 +19119,41 @@ TEST_F(VkLayerTest, CompressedImageMipCopyTests) {
     // Copy width < compressed block size, but not the full mip width
     region.imageExtent = {1, 2, 1};
     region.imageSubresource.mipLevel = 4;
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_0160019e);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_0160019e);  // width not a multiple of compressed block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_19200e04);  // image transfer granularity
     vkCmdCopyImageToBuffer(m_commandBuffer->handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16.handle(), 1, &region);
     m_errorMonitor->VerifyFound();
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_0160019e);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_0160019e);  // width not a multiple of compressed block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_18e00e02);  // image transfer granularity
     vkCmdCopyBufferToImage(m_commandBuffer->handle(), buffer_16.handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
     m_errorMonitor->VerifyFound();
 
     // Copy height < compressed block size but not the full mip height
     region.imageExtent = {2, 1, 1};
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_016001a0);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_016001a0);  // height not a multiple of compressed block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_19200e04);  // image transfer granularity
     vkCmdCopyImageToBuffer(m_commandBuffer->handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16.handle(), 1, &region);
     m_errorMonitor->VerifyFound();
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_016001a0);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_016001a0);  // height not a multiple of compressed block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_18e00e02);  // image transfer granularity
     vkCmdCopyBufferToImage(m_commandBuffer->handle(), buffer_16.handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
     m_errorMonitor->VerifyFound();
 
     // Offsets must be multiple of compressed block size
     region.imageOffset = {1, 1, 0};
     region.imageExtent = {1, 1, 1};
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_0160019a);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_0160019a);  // imageOffset not a multiple of block size
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_19200e04);  // image transfer granularity
     vkCmdCopyImageToBuffer(m_commandBuffer->handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16.handle(), 1, &region);
     m_errorMonitor->VerifyFound();
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_0160019a);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_0160019a);  // imageOffset not a multiple of block size
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_18e00e02);  // image transfer granularity
     vkCmdCopyBufferToImage(m_commandBuffer->handle(), buffer_16.handle(), image.handle(), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
     m_errorMonitor->VerifyFound();
 
@@ -19163,17 +19175,20 @@ TEST_F(VkLayerTest, CompressedImageMipCopyTests) {
 
     // Offset + extent width < mip width and not a multiple of block width - should fail
     region.imageExtent = {3, 3, 1};
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_016001a0);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_016001a0);  // offset+extent not a multiple of block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_19200e04);  // image transfer granularity
     vkCmdCopyImageToBuffer(m_commandBuffer->handle(), odd_image.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16.handle(), 1, &region);
     m_errorMonitor->VerifyFound();
-    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_016001a0);
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                         VALIDATION_ERROR_016001a0);  // offset+extent not a multiple of block width
+    m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_18e00e02);  // image transfer granularity
     vkCmdCopyBufferToImage(m_commandBuffer->handle(), buffer_16.handle(), odd_image.handle(), VK_IMAGE_LAYOUT_GENERAL, 1, &region);
     m_errorMonitor->VerifyFound();
 }
 
 TEST_F(VkLayerTest, ImageBufferCopyTests) {
     TEST_DESCRIPTION("Image to buffer and buffer to image tests");
-
     ASSERT_NO_FATAL_FAILURE(Init());
     VkFormatProperties format_props = m_device->format_properties(VK_FORMAT_D24_UNORM_S8_UINT);
     if (!(format_props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
@@ -19497,14 +19512,20 @@ TEST_F(VkLayerTest, ImageBufferCopyTests) {
         region.bufferOffset = 0;
 
         // extents that are not a multiple of compressed block size
-        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_0160019e);
+        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                             VALIDATION_ERROR_0160019e);  // extent width not a multiple of block size
+        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                             VALIDATION_ERROR_19200e04);  // image transfer granularity
         region.imageExtent.width = 66;
         vkCmdCopyImageToBuffer(m_commandBuffer->handle(), image_NPOT_4x4comp.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16k.handle(),
                                1, &region);
         m_errorMonitor->VerifyFound();
         region.imageExtent.width = 128;
 
-        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT, VALIDATION_ERROR_016001a0);
+        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                             VALIDATION_ERROR_016001a0);  // extent height not a multiple of block size
+        m_errorMonitor->SetDesiredFailureMsg(VK_DEBUG_REPORT_ERROR_BIT_EXT,
+                                             VALIDATION_ERROR_19200e04);  // image transfer granularity
         region.imageExtent.height = 2;
         vkCmdCopyImageToBuffer(m_commandBuffer->handle(), image_NPOT_4x4comp.handle(), VK_IMAGE_LAYOUT_GENERAL, buffer_16k.handle(),
                                1, &region);

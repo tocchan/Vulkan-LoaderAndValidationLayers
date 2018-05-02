@@ -1405,21 +1405,6 @@ bool ValidateCopyBufferImageTransferGranularityRequirements(layer_data *device_d
     VkExtent3D subresource_extent = GetImageSubresourceExtent(img, &region->imageSubresource);
     skip |= CheckItgExtent(device_data, cb_node, &region->imageExtent, &region->imageOffset, &granularity, &subresource_extent,
                            img->createInfo.imageType, i, function, "imageExtent", vuid);
-    if (FormatIsCompressed(img->createInfo.format) == true) {
-        // TODO: Add granularity checking for compressed formats
-
-        // bufferRowLength must be a multiple of the compressed texel block width
-        // bufferImageHeight must be a multiple of the compressed texel block height
-        // all members of imageOffset must be a multiple of the corresponding dimensions of the compressed texel block
-        // bufferOffset must be a multiple of the compressed texel block size in bytes
-        // imageExtent.width must be a multiple of the compressed texel block width or (imageExtent.width + imageOffset.x)
-        //     must equal the image subresource width
-        // imageExtent.height must be a multiple of the compressed texel block height or (imageExtent.height + imageOffset.y)
-        //     must equal the image subresource height
-        // imageExtent.depth must be a multiple of the compressed texel block depth or (imageExtent.depth + imageOffset.z)
-        //     must equal the image subresource depth
-    } else {
-    }
     return skip;
 }
 
@@ -3816,10 +3801,7 @@ bool ValidateBufferImageCopyData(const debug_report_data *report_data, uint32_t 
         }
 
         // Checks that apply only to compressed images
-        // TODO: there is a comment in ValidateCopyBufferImageTransferGranularityRequirements() in core_validation.cpp that
-        //       reserves a place for these compressed image checks.  This block of code could move there once the image
-        //       stuff is moved into core validation.
-        if (FormatIsCompressed(image_state->createInfo.format)) {
+        if (FormatIsCompressed(image_state->createInfo.format) || FormatIsSinglePlane_422(image_state->createInfo.format)) {
             auto block_size = FormatCompressedTexelBlockExtent(image_state->createInfo.format);
 
             //  BufferRowLength must be a multiple of block width
