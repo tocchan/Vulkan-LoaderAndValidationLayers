@@ -3092,6 +3092,23 @@ static void ConsoleEnlarge() {
 }
 #endif
 
+void print_usage(char* argv0) {
+    printf("\nVulkaninfo - Summarize Vulkan information in relation to the current environment.\n\n");
+    printf("USAGE: %s [options]\n\n", argv0);
+    printf("OPTIONS:\n");
+    printf("-h, --help                        Print this help.\n");
+    printf("--html                            Produce an html version of Vulkaninfo output,\n");
+    printf("                                  saved as \"vulkaninfo.html\" in the directory in\n");
+    printf("                                  which the command is run.\n");
+    printf("-j, --json, --json=<gpu-number>   Produce a json version of Vulkaninfo output\n");
+    printf("                                  to standard output. On a multi-gpu system, a\n");
+    printf("                                  single gpu can be targetted by specifying the\n");
+    printf("                                  gpu-number associated with the gpu of interest.\n");
+    printf("                                  This number can be determined by running\n");
+    printf("                                  %s\n", argv0);
+    printf("                                  without any options specified.\n\n");
+}
+
 int main(int argc, char **argv) {
     uint32_t gpu_count;
     VkResult err;
@@ -3115,7 +3132,10 @@ int main(int argc, char **argv) {
     const uint32_t vulkan_patch = VK_VERSION_PATCH(VK_HEADER_VERSION);
 
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--html") == 0) {
+        if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        } else if (strcmp(argv[i], "--html") == 0) {
             out = fopen("vulkaninfo.html", "w");
             human_readable_output = false;
             html_output = true;
