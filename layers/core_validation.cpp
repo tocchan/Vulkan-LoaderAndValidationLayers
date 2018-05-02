@@ -12352,13 +12352,19 @@ VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectNameEXT(VkDevice device, cons
         device_data->report_data->debugObjectNameMap->erase(pNameInfo->object);
     }
     lock.unlock();
-    VkResult result = device_data->dispatch_table.DebugMarkerSetObjectNameEXT(device, pNameInfo);
+    VkResult result = VK_SUCCESS;
+    if (device_data->dispatch_table.DebugMarkerSetObjectNameEXT) {
+        result = device_data->dispatch_table.DebugMarkerSetObjectNameEXT(device, pNameInfo);
+    }
     return result;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL DebugMarkerSetObjectTagEXT(VkDevice device, VkDebugMarkerObjectTagInfoEXT *pTagInfo) {
     layer_data *device_data = GetLayerDataPtr(get_dispatch_key(device), layer_data_map);
-    VkResult result = device_data->dispatch_table.DebugMarkerSetObjectTagEXT(device, pTagInfo);
+    VkResult result = VK_SUCCESS;
+    if (device_data->dispatch_table.DebugMarkerSetObjectTagEXT) {
+        result = device_data->dispatch_table.DebugMarkerSetObjectTagEXT(device, pTagInfo);
+    }
     return result;
 }
 
@@ -12372,7 +12378,7 @@ VKAPI_ATTR void VKAPI_CALL CmdDebugMarkerBeginEXT(VkCommandBuffer commandBuffer,
         skip |= ValidateCmd(device_data, cb_state, CMD_DEBUGMARKERBEGINEXT, "vkCmdDebugMarkerBeginEXT()");
     }
     lock.unlock();
-    if (!skip) {
+    if (!skip && device_data->dispatch_table.CmdDebugMarkerBeginEXT) {
         device_data->dispatch_table.CmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
     }
 }
@@ -12387,14 +12393,16 @@ VKAPI_ATTR void VKAPI_CALL CmdDebugMarkerEndEXT(VkCommandBuffer commandBuffer) {
         skip |= ValidateCmd(device_data, cb_state, CMD_DEBUGMARKERENDEXT, "vkCmdDebugMarkerEndEXT()");
     }
     lock.unlock();
-    if (!skip) {
+    if (!skip && device_data->dispatch_table.CmdDebugMarkerEndEXT) {
         device_data->dispatch_table.CmdDebugMarkerEndEXT(commandBuffer);
     }
 }
 
 VKAPI_ATTR void VKAPI_CALL CmdDebugMarkerInsertEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT *pMarkerInfo) {
     layer_data *device_data = GetLayerDataPtr(get_dispatch_key(commandBuffer), layer_data_map);
-    device_data->dispatch_table.CmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
+    if (device_data->dispatch_table.CmdDebugMarkerInsertEXT) {
+        device_data->dispatch_table.CmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
+    }
 }
 
 VKAPI_ATTR void VKAPI_CALL CmdSetDiscardRectangleEXT(VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle,
